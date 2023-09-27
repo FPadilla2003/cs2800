@@ -193,17 +193,17 @@ def apply : list ℕ → (ℕ → ℕ) → list ℕ
 Test apply (using "example") three times on the list [1,2,3] and with f being the following three functions: (1) the function that doubles its argument, (2) the function that squares its argument, (3) the function that bounds its argument to be at most 2. Do not first define these three functions and then pass them to apply. Instead, pass each of them directly as an anonymous function (lambda abstraction). 
 -/
 -- ANSWER:
-example: apply [1,2,3] ... = ... := begin refl, end 
-example: apply [1,2,3] ... = ...  := begin refl, end 
-example: apply [1,2,3] ... = ...  := begin refl, end 
+example: apply [1,2,3] (fun (x : nat), 2 * x) = [2,4,6] := begin refl, end 
+example: apply [1,2,3] (fun (x : nat), x * x) = [1,4,9]  := begin refl, end 
+example: apply [1,2,3] (fun (x : nat), if x <= 2 then x else 2) = [1,2,2]  := begin refl, end 
 
 
 /- HWK03-07-2:
 Use apply to turn all the elements of the input list to 42s. That is, complete the "..." in the examples below with the appropriate anonymous function such that the example-theorems hold.
 -/
-example: apply [1,2,3]  ...  = [42,42,42] := begin refl, end 
-example: apply [21,2,3,3]  ...  = [42,42,42,42] := begin refl, end 
-example: apply [1,2,3,4,5,6,7]  ...  = [42,42,42,42,42,42,42] := begin refl, end 
+example: apply [1,2,3]  (fun (x : nat), if x >= 0 then 42 else 42)  = [42,42,42] := begin refl, end 
+example: apply [21,2,3,3]  (fun (x : nat), if x >= 0 then 42 else 42)  = [42,42,42,42] := begin refl, end 
+example: apply [1,2,3,4,5,6,7]  (fun (x : nat), if x >= 0 then 42 else 42)  = [42,42,42,42,42,42,42] := begin refl, end 
 
 
 
@@ -215,7 +215,8 @@ Define the function "curry" which takes as input a function f and returns as out
 - g takes as input two nats x and y, and returns as output a nat which is the same as f(x,y).
 -/
 -- ANSWER:
-def curry  ... 
+def curry : (prod nat nat -> nat) -> (nat -> nat -> nat)
+  | n := fun (x : nat) (y : nat), n (x,y)
 
 
 /- HWK03-08-2:
@@ -241,17 +242,19 @@ define an inductive data type called "btn" which represents a binary tree whose 
 
 -/
 -- ANSWER:
-inductive btn ... 
+inductive btn : Type
+  | leaf : nat -> btn
+  | node : btn -> btn -> nat -> btn
 
 
 /- HWK03-09-2:
 use #check to construct a few trees of type btn, and make sure they are all of type btn. 
 -/
 -- ANSWER:
-#check ... 
-#check ... 
-#check ... 
-#check ... 
+#check btn.leaf 1
+#check btn.node (btn.leaf 1) (btn.leaf 3) 4
+#check btn.node (btn.node (btn.leaf 6) (btn.leaf 8) 1) (btn.leaf 3) 4
+#check btn.node (btn.node (btn.leaf 6) (btn.leaf 8) 1) (btn.node (btn.leaf 12) (btn.leaf 2) 0) 4 
 
 
 
@@ -263,7 +266,19 @@ The order in which the nats appear in the list does not matter, but all the nats
 Evaluate your function on the tests given below: you must find which arguments to pass to your function so that all tests pass! note: there could be different trees that all result in the same list. we don't care which of those you pass to your function, as long as it returns the right list. 
 -/
 -- ANSWER:
-def btn2natlist ... 
+def btn2natlisthelper : btn -> nat
+  | btn.leaf n := n
+
+
+def btn2natlist : btn -> list nat
+  | (btn.leaf a) := [a]
+  | 
+
+-- def btn2natlist : btn -> list nat
+--   | (btn.leaf a) := [a]
+--   | (btn.node (btn.leaf a) (btn.leaf b) c) := (a :: (b :: (c :: [])))
+--   | (btn.node (btn.node (btn.leaf a) (btn.leaf b) c) (btn.leaf d) e) := (a :: b :: c :: d :: e :: [])
+
 
 example: btn2natlist ...  = [10] := begin refl, end 
 example: btn2natlist ... = [0,1,2] := begin refl, end 
@@ -321,7 +336,9 @@ All tests below must pass!
 -/
 -- ANSWER:
 def myeven : mynat -> bool 
-     ... 
+  | (Z) := bool.tt
+  | (S Z) := bool.ff
+  | (S (S x)) := myeven x
 
 -- DO NOT DELETE:
 example: myeven Z = tt := begin refl, end 
@@ -337,7 +354,7 @@ All tests below must pass!
 -/
 -- ANSWER:
 
-def myodd : mynat -> bool := ... 
+def myodd : mynat -> bool := fun (x : mynat), if (myeven x) then ff else tt  
 
 -- DO NOT DELETE:
 example: myodd Z = ff := begin refl, end 
@@ -359,16 +376,21 @@ Finally, state, as a LEAN theorem, that _minustwo1_ and _minustwo2_ are equivale
 
 -- decrement by two, direct definition:
 def minustwo1: mynat -> mynat 
-    ... 
+  | (Z) := Z
+  | (S Z) := Z
+  | (S (S x)) := x
 
 
 -- decrement by one, bounded by zero:
 def decr: mynat -> mynat 
-   ... 
+  | (Z) := Z
+  | (S x) := x
 
 
 -- decrement by two, definition in terms of decr:
-def minustwo2  ... 
+def minustwo2: mynat -> mynat
+  | (Z) := Z
+  | (S x) := decr(decr(x))
 
 
 -- DO NOT DELETE:
@@ -404,7 +426,16 @@ you can use myplus (addition on mynats that we defined in class) as a helper fun
 -/
 -- ANSWER:
 
-def mymult ... 
+-- addition on mynat :
+def myplus: mynat -> mynat -> mynat 
+  | mynat.Z y := y 
+  | (S x) y := S (myplus x y)    -- (x+1) + y  =  (x+y) + 1  
+--  | (mynat.S x) y := (myplus x (S y))     -- (x+1) + y  =  x + (y+1)   
+
+def mymult : mynat -> mynat -> mynat
+  | Z y := Z
+  | y Z := Z
+  | (S x) y := myplus (mymult x y) y
 
 
 -- TESTS: DO NOT REMOVE!
@@ -433,7 +464,15 @@ make sure your function passes all the tests given below.
 your definition of mult is allowed to use plus (addition on nats that we defined in class) as a helper function, but it is NOT allowed to use predefined LEAN functions like +, *, etc. 
 -/
 -- ANSWER:
-def mult ... 
+def plus : nat -> nat -> nat
+  | nat.zero y := y
+  | (nat.succ x) y := nat.succ (plus x y)
+
+def mult : nat -> nat -> nat
+  | nat.zero y := nat.zero
+  | y nat.zero := nat.zero
+  | (nat.succ x) y := plus (mult x y) y
+
 
 -- TESTS: DO NOT REMOVE!
 example: mult 0 3 = 0 := begin refl, end 
@@ -463,7 +502,9 @@ nat2negint takes a nat x and returns (-x-1) of type myint. thus, (myint.nat2negi
 -/
 -- ANSWER:
 
-inductive myint ... 
+inductive myint : Type
+  | nat2int : ℕ → myint
+  | nat2negint : ℕ → myint
 
 #check (myint.nat2int 0) -- this means 0
 #check (myint.nat2int 1) -- this means 1
@@ -474,8 +515,12 @@ inductive myint ...
 /- HWK03-14-2:
 define the function myabs : myint → ℕ which takes a myint x and returns the absolute value of x as a nat. all tests below must pass! 
 -/ 
+open myint
 
-def myabs ... 
+def myabs : myint -> nat
+  | (nat2int x) := x
+  | (nat2negint x) := (x + 1)
+
 
 -- DO NOT DELETE:
 example: myabs (myint.nat2int 10) = 10 := begin refl, end 
